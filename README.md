@@ -1,0 +1,246 @@
+# TransparensiMY 🇲🇾
+
+A blockchain-based government spending transparency web application for Malaysia, built with React, Node.js, and smart contracts on the Polygon network.
+
+## Features
+
+### Frontend (React + TypeScript)
+- 📊 **Real-time Dashboard** - Interactive spending visualization with charts
+- 🔍 **Advanced Search & Filtering** - Find projects by department, location, type, and amount
+- 🌐 **Multi-language Support** - English and Bahasa Malaysia
+- 📱 **Mobile Responsive** - Malaysian color scheme (Red, Blue, Yellow)
+- 📋 **Project Details** - Individual pages showing budget vs actual spending
+- 💬 **Citizen Feedback System** - Rate and comment on projects
+- 🛠️ **Admin Interface** - Government officials can add spending records
+
+### Backend & Blockchain
+- ⛓️ **Smart Contracts** - Immutable transaction records on Polygon
+- 🏛️ **Government Departments** - Pre-configured Malaysian ministries
+- 📈 **API Endpoints** - RESTful API for data access and manipulation
+- 🔒 **Secure & Transparent** - Blockchain-based verification
+- 📊 **Real-time Analytics** - Spending statistics and trends
+
+### Key Government Departments
+- Ministry of Health (Kementerian Kesihatan)
+- Ministry of Education (Kementerian Pendidikan)
+- Ministry of Transport (Kementerian Pengangkutan)
+- Ministry of Finance (Kementerian Kewangan)
+- Ministry of Defence (Kementerian Pertahanan)
+- Ministry of Home Affairs (Kementerian Dalam Negeri)
+- Ministry of Science, Technology and Innovation (Kementerian Sains, Teknologi dan Inovasi)
+- Ministry of Tourism, Arts and Culture (Kementerian Pelancongan, Seni dan Budaya)
+
+## Technology Stack
+
+- **Frontend**: React 18, TypeScript, Tailwind CSS, Recharts, React Router
+- **Backend**: Node.js, Express, TypeScript
+- **Blockchain**: Solidity, Hardhat, Ethers.js, Polygon Network
+- **Styling**: Tailwind CSS with Malaysian flag colors
+- **Internationalization**: react-i18next for English/Bahasa Malaysia support
+
+## Project Structure
+
+```
+tranparencymy/
+├── frontend/                 # React TypeScript application
+│   ├── src/
+│   │   ├── components/       # React components
+│   │   ├── pages/           # Page components
+│   │   ├── hooks/           # Custom React hooks
+│   │   ├── utils/           # Utility functions and API
+│   │   └── types/           # TypeScript type definitions
+│   ├── public/              # Static assets
+│   └── package.json
+├── backend/                 # Node.js Express API
+│   ├── src/
+│   │   ├── routes/          # API route handlers
+│   │   ├── controllers/     # Business logic
+│   │   ├── middleware/      # Express middleware
+│   │   ├── models/          # Data models
+│   │   └── utils/           # Utility functions
+│   ├── contracts/           # Solidity smart contracts
+│   ├── scripts/             # Deployment scripts
+│   ├── test/               # Contract tests
+│   └── package.json
+└── README.md
+```
+
+## Quick Start
+
+### Prerequisites
+- Node.js 16+ and npm
+- Git
+- Polygon wallet (MetaMask) with MATIC tokens for deployment
+
+### 1. Clone and Install Dependencies
+
+```bash
+git clone <repository-url>
+cd tranparencymy
+npm run install:all
+```
+
+### 2. Environment Setup
+
+Create `.env` files in the backend directory:
+
+```bash
+# backend/.env
+PORT=3001
+NODE_ENV=development
+
+# Blockchain Configuration  
+POLYGON_RPC_URL=https://polygon-rpc.com
+MUMBAI_RPC_URL=https://rpc-mumbai.maticvigil.com
+PRIVATE_KEY=your_private_key_here
+
+# Frontend URL
+FRONTEND_URL=http://localhost:3000
+```
+
+### 3. Deploy Smart Contracts
+
+```bash
+cd backend
+npm run compile
+npm run deploy:mumbai  # For testnet
+# or
+npm run deploy:polygon # For mainnet
+```
+
+### 4. Start Development Servers
+
+```bash
+# From root directory
+npm run dev
+```
+
+This will start:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001
+
+### 5. Access the Application
+
+Open http://localhost:3000 in your browser to see the TransparensiMY dashboard.
+
+## API Endpoints
+
+### Transactions
+- `GET /api/transactions` - List all transactions with pagination
+- `GET /api/transactions/:id` - Get specific transaction
+- `GET /api/transactions/search/:query` - Search transactions
+- `GET /api/transactions/stats/summary` - Get spending statistics
+- `GET /api/transactions/stats/by-department` - Department spending breakdown
+
+### Departments
+- `GET /api/departments` - List all departments
+- `GET /api/departments/:id/spending` - Department spending details
+- `GET /api/departments/:id/transactions` - Transactions by department
+
+### Feedback
+- `POST /api/feedback` - Submit citizen feedback
+- `GET /api/feedback/transaction/:id` - Get feedback for transaction
+- `GET /api/feedback/rating/:id` - Get rating summary
+
+### Admin
+- `POST /api/admin/transaction` - Create new transaction (authorized only)
+- `GET /api/admin/dashboard` - Admin dashboard statistics
+
+## Smart Contracts
+
+### GovernmentSpending.sol
+Main contract for recording government transactions with features:
+- Transaction recording and updating
+- Department management
+- Spending analytics
+- Access control for authorized officials
+
+### CitizenFeedback.sol
+Contract for citizen feedback system with features:
+- Feedback submission with ratings (1-5)
+- Comment moderation
+- Rating aggregation
+- User management (ban/unban)
+
+## Development
+
+### Frontend Development
+```bash
+cd frontend
+npm start
+```
+
+### Backend Development
+```bash
+cd backend
+npm run dev
+```
+
+### Smart Contract Development
+```bash
+cd backend
+npm run compile      # Compile contracts
+npm run test         # Run tests
+npm run deploy       # Deploy to configured network
+```
+
+### Code Style
+- TypeScript strict mode enabled
+- Tailwind CSS for styling
+- ESLint and Prettier configured
+- Malaysian color scheme and design principles
+
+## Deployment
+
+### Frontend Deployment
+Build the React app:
+```bash
+cd frontend
+npm run build
+```
+
+### Backend Deployment
+Build the Node.js app:
+```bash
+cd backend
+npm run build
+npm start
+```
+
+### Smart Contract Deployment
+Deploy to Polygon mainnet or Mumbai testnet:
+```bash
+cd backend
+npx hardhat run scripts/deploy.js --network polygon
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-name`
+3. Make your changes and commit: `git commit -m 'Add some feature'`
+4. Push to the branch: `git push origin feature-name`
+5. Submit a pull request
+
+## Security
+
+- Smart contracts audited for common vulnerabilities
+- Input validation on all API endpoints
+- Rate limiting and CORS protection
+- Environment variables for sensitive data
+- Multi-signature wallet support for contract administration
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Malaysian government for transparency initiatives
+- Polygon network for scalable blockchain infrastructure
+- React and Node.js communities for excellent tooling
+- Open source contributors and maintainers
+
+---
+
+**TransparensiMY** - Building trust through transparency in government spending. 🏛️✨
