@@ -1,83 +1,114 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { transactionAPI, departmentAPI } from '../utils/api';
-import { Transaction, Department } from '../types';
+import { blockchainDataService, BlockchainTransaction } from '../services/blockchainDataService';
+import CitizenFeedbackForm from './CitizenFeedbackForm';
+import { formatMYRFromMATIC } from '../utils/currency';
 
 export const Projects: React.FC = () => {
   const { t } = useTranslation();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
+  const [transactions, setTransactions] = useState<BlockchainTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
   
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedProjectType, setSelectedProjectType] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  
+  // Feedback modal
+  const [selectedProjectForFeedback, setSelectedProjectForFeedback] = useState<BlockchainTransaction | null>(null);
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(20);
+  const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     fetchData();
   }, []);
 
+  // Auto-refresh data every 30 seconds to get latest blockchain updates
   useEffect(() => {
-    if (searchQuery.length >= 3) {
-      handleSearch();
-    } else if (searchQuery.length === 0) {
-      fetchTransactions();
+    if (isConnected && transactions.length > 0) {
+      const interval = setInterval(() => {
+        fetchData();
+      }, 30000);
+      return () => clearInterval(interval);
     }
-  }, [searchQuery, selectedDepartment, selectedProjectType, selectedLocation]);
+  }, [isConnected, transactions.length]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [transactionsRes, departmentsRes] = await Promise.all([
-        transactionAPI.getAll({ limit: 100 }),
-        departmentAPI.getAll()
-      ]);
-      
-      setTransactions(transactionsRes.data.data);
-      setDepartments(departmentsRes.data.data);
       setError(null);
-    } catch (err) {
-      setError('Failed to load projects');
+
+      // Check blockchain connection
+      const connected = await blockchainDataService.isConnected();
+      setIsConnected(connected);
+
+      if (!connected) {
+        setError('⚠️ Blockchain network not available. Please ensure local Hardhat node is running.');
+        setLoading(false);
+        return;
+      }
+
+      // Fetch blockchain data
+      const blockchainTransactions = await blockchainDataService.getTransactions(100);
+      
+      if (blockchainTransactions.length === 0) {
+        setError('📝 No projects found on blockchain. Submit your first spending record to see it here!');
+      }
+      
+      setTransactions(blockchainTransactions);
+    } catch (err: any) {
+      setError(`Failed to load blockchain projects: ${err.message}`);
       console.error('Projects error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchTransactions = async () => {
-    try {
-      const response = await transactionAPI.getAll({
-        limit: 100,
-        department: selectedDepartment || undefined,
-        projectType: selectedProjectType || undefined,
-        location: selectedLocation || undefined
-      });
-      setTransactions(response.data.data);
-    } catch (err) {
-      console.error('Error fetching transactions:', err);
-    }
-  };
-
-  const handleSearch = async () => {
-    if (searchQuery.length < 3) return;
+  // Client-side filtering for blockchain data
+  const applyFilters = () => {
+    if (!isConnected) return [];
     
-    try {
-      setLoading(true);
-      const response = await transactionAPI.search(searchQuery, 100);
-      setTransactions(response.data.data);
-    } catch (err) {
-      console.error('Search error:', err);
-    } finally {
-      setLoading(false);
+    let filtered = [...transactions];
+
+    // Search filter
+    if (searchQuery.trim().length >= 3) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(tx => 
+        tx.projectName.toLowerCase().includes(query) ||
+        tx.description.toLowerCase().includes(query) ||
+        tx.department.toLowerCase().includes(query) ||
+        tx.location.toLowerCase().includes(query)
+      );
     }
+
+    // Department filter
+    if (selectedDepartment) {
+      filtered = filtered.filter(tx => tx.department === selectedDepartment);
+    }
+
+    // Project type filter
+    if (selectedProjectType) {
+      filtered = filtered.filter(tx => tx.projectType === selectedProjectType);
+    }
+
+    // Location filter
+    if (selectedLocation) {
+      filtered = filtered.filter(tx => tx.location === selectedLocation);
+    }
+
+    // Status filter
+    if (selectedStatus) {
+      filtered = filtered.filter(tx => tx.status === selectedStatus);
+    }
+
+    return filtered;
   };
 
   const clearFilters = () => {
@@ -85,35 +116,39 @@ export const Projects: React.FC = () => {
     setSelectedDepartment('');
     setSelectedProjectType('');
     setSelectedLocation('');
-    fetchData();
+    setSelectedStatus('');
+    setCurrentPage(1);
   };
 
-  const formatCurrency = (amount: string) => {
-    const num = parseFloat(amount);
-    return `RM ${num.toLocaleString('en-MY', { maximumFractionDigits: 0 })}`;
+  // Currency formatting is now handled by the imported formatMYRFromMATIC function
+
+  const getUtilizationColor = (utilizationRate: number) => {
+    if (utilizationRate >= 90) return 'text-red-600 bg-red-50';
+    if (utilizationRate >= 70) return 'text-yellow-600 bg-yellow-50';
+    return 'text-green-600 bg-green-50';
   };
 
-  const getUtilizationColor = (budget: string, spent: string) => {
-    const utilization = (parseFloat(spent) / parseFloat(budget)) * 100;
-    if (utilization >= 90) return 'text-red-600';
-    if (utilization >= 70) return 'text-yellow-600';
-    return 'text-green-600';
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Completed': return 'bg-green-100 text-green-800';
+      case 'In Progress': return 'bg-blue-100 text-blue-800';
+      case 'Pending': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
-  const getUtilizationPercentage = (budget: string, spent: string) => {
-    const utilization = (parseFloat(spent) / parseFloat(budget)) * 100;
-    return utilization.toFixed(1);
-  };
-
-  // Get unique values for filters
+  // Get filtered data and unique values for filters
+  const filteredTransactions = applyFilters();
+  const departments = Array.from(new Set(transactions.map(t => t.department)));
   const projectTypes = Array.from(new Set(transactions.map(t => t.projectType)));
   const locations = Array.from(new Set(transactions.map(t => t.location)));
+  const statuses = ['Pending', 'In Progress', 'Completed'];
 
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = transactions.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(transactions.length / itemsPerPage);
+  const currentItems = filteredTransactions.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
 
   if (loading && transactions.length === 0) {
     return (
@@ -135,9 +170,21 @@ export const Projects: React.FC = () => {
           <p className="text-gray-600">Explore government projects and spending transparency</p>
         </div>
 
+        {/* Connection Status */}
+        {!isConnected && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3"></div>
+              <p className="text-yellow-800 text-sm">
+                ⚠️ Blockchain connection unavailable. Make sure Hardhat node is running on localhost:8545
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
             {/* Search */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -164,8 +211,8 @@ export const Projects: React.FC = () => {
               >
                 <option value="">All Departments</option>
                 {departments.map(dept => (
-                  <option key={dept.id} value={dept.id}>
-                    {t(`departments.${dept.id}`) || dept.name}
+                  <option key={dept} value={dept}>
+                    {dept}
                   </option>
                 ))}
               </select>
@@ -204,6 +251,23 @@ export const Projects: React.FC = () => {
                 ))}
               </select>
             </div>
+
+            {/* Status Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Project Status
+              </label>
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-malaysia-red focus:border-transparent"
+              >
+                <option value="">All Status</option>
+                {statuses.map(status => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="flex justify-between items-center">
@@ -214,7 +278,7 @@ export const Projects: React.FC = () => {
               Clear all filters
             </button>
             <div className="text-sm text-gray-600">
-              Showing {transactions.length} projects
+              Showing {filteredTransactions.length} of {transactions.length} blockchain projects
             </div>
           </div>
         </div>
@@ -257,7 +321,13 @@ export const Projects: React.FC = () => {
                         {t('spent')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Utilization
+                        Progress
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Rating
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         {t('location')}
@@ -272,9 +342,13 @@ export const Projects: React.FC = () => {
                       <tr key={transaction.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 text-sm text-gray-900">
                           <div className="font-medium">{transaction.projectName}</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            ID: #{transaction.id} • {transaction.timestamp.toLocaleDateString()}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {t(`departments.${transaction.department}`) || transaction.department}
+                          <div className="font-medium">{transaction.department}</div>
+                          <div className="text-xs text-gray-400">Ministry</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -282,26 +356,62 @@ export const Projects: React.FC = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatCurrency(transaction.budgetAllocated)}
+                          <div className="font-medium">{formatMYRFromMATIC(transaction.budgetAllocated)}</div>
+                          <div className="text-xs text-gray-500">Allocated</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatCurrency(transaction.amountSpent)}
+                          <div className="font-medium">{formatMYRFromMATIC(transaction.amountSpent)}</div>
+                          <div className="text-xs text-gray-500">Spent</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span className={`font-medium ${getUtilizationColor(transaction.budgetAllocated, transaction.amountSpent)}`}>
-                            {getUtilizationPercentage(transaction.budgetAllocated, transaction.amountSpent)}%
+                          <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getUtilizationColor(transaction.utilizationRate)}`}>
+                            {transaction.utilizationRate.toFixed(1)}%
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                            <div 
+                              className="bg-blue-600 h-1.5 rounded-full" 
+                              style={{ width: `${Math.min(transaction.utilizationRate, 100)}%` }}
+                            ></div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {transaction.rating && transaction.rating.total > 0 ? (
+                            <div>
+                              <div className="flex items-center">
+                                <span className="text-yellow-400">⭐</span>
+                                <span className="ml-1 font-medium">{transaction.rating.average.toFixed(1)}</span>
+                              </div>
+                              <div className="text-xs text-gray-500">{transaction.rating.total} reviews</div>
+                            </div>
+                          ) : (
+                            <div className="text-xs text-gray-400">No reviews</div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
+                            {transaction.status}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {transaction.location}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <Link
-                            to={`/projects/${transaction.id}`}
-                            className="text-malaysia-red hover:text-red-700"
-                          >
-                            View Details
-                          </Link>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => setSelectedProjectForFeedback(transaction)}
+                              className="text-green-600 hover:text-green-700 text-xs"
+                            >
+                              💬 Feedback
+                            </button>
+                            <a
+                              href={`https://sepolia.etherscan.io/address/${transaction.recordedBy}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-700 text-xs"
+                            >
+                              🔍 Verify
+                            </a>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -332,8 +442,8 @@ export const Projects: React.FC = () => {
                     <div>
                       <p className="text-sm text-gray-700">
                         Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to{' '}
-                        <span className="font-medium">{Math.min(indexOfLastItem, transactions.length)}</span> of{' '}
-                        <span className="font-medium">{transactions.length}</span> results
+                        <span className="font-medium">{Math.min(indexOfLastItem, filteredTransactions.length)}</span> of{' '}
+                        <span className="font-medium">{filteredTransactions.length}</span> results
                       </p>
                     </div>
                     <div>
@@ -360,6 +470,21 @@ export const Projects: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Feedback Modal */}
+      {selectedProjectForFeedback && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4">
+              <CitizenFeedbackForm
+                transactionId={parseInt(selectedProjectForFeedback.id)}
+                projectName={selectedProjectForFeedback.projectName}
+                onClose={() => setSelectedProjectForFeedback(null)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

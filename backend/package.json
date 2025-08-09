@@ -19,6 +19,7 @@
   "description": "",
   "dependencies": {
     "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "@nomiclabs/hardhat-etherscan": "^3.1.8",
     "@nomiclabs/hardhat-waffle": "^2.0.6",
     "@prisma/client": "^6.13.0",
     "@types/chai": "^5.2.2",

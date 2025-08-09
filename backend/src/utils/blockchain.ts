@@ -12,8 +12,8 @@ export class BlockchainService {
   constructor() {
     // Initialize provider
     const rpcUrl = process.env.NODE_ENV === 'development' 
-      ? process.env.MUMBAI_RPC_URL || 'https://rpc-mumbai.maticvigil.com'
-      : process.env.POLYGON_RPC_URL || 'https://polygon-rpc.com';
+      ? 'http://127.0.0.1:8545'  // Use local hardhat network for development
+      : process.env.MUMBAI_RPC_URL || 'https://polygon-mumbai.g.alchemy.com/v2/demo';
       
     this.provider = new ethers.providers.JsonRpcProvider(rpcUrl);
     
@@ -258,6 +258,116 @@ export class BlockchainService {
       };
     } catch (error) {
       console.error('Error fetching transaction rating:', error);
+      throw error;
+    }
+  }
+
+  // Create a signer with any private key (for client transactions)
+  createSigner(privateKey: string) {
+    return new ethers.Wallet(privateKey, this.provider);
+  }
+
+  // Record transaction with custom signer
+  async recordTransactionWithSigner(signer: ethers.Signer, transactionData: {
+    department: string;
+    projectName: string;
+    projectType: string;
+    budgetAllocated: string;
+    amountSpent: string;
+    location: string;
+    description: string;
+  }) {
+    try {
+      // Load contract addresses and ABIs
+      const contractAddresses = await import('../config/contracts.json');
+      const governmentSpendingABI = await import('../../artifacts/contracts/GovernmentSpending.sol/GovernmentSpending.json');
+
+      const contract = new ethers.Contract(
+        contractAddresses.GovernmentSpending,
+        governmentSpendingABI.abi,
+        signer
+      );
+
+      const tx = await contract.recordTransaction(
+        transactionData.department,
+        transactionData.projectName,
+        transactionData.projectType,
+        ethers.utils.parseEther(transactionData.budgetAllocated),
+        ethers.utils.parseEther(transactionData.amountSpent),
+        transactionData.location,
+        transactionData.description
+      );
+
+      await tx.wait();
+      return tx.hash;
+    } catch (error) {
+      console.error('Error recording transaction with signer:', error);
+      throw error;
+    }
+  }
+
+  // Submit feedback with custom signer
+  async submitFeedbackWithSigner(signer: ethers.Signer, transactionId: number, comment: string, rating: number) {
+    try {
+      // Load contract addresses and ABIs
+      const contractAddresses = await import('../config/contracts.json');
+      const citizenFeedbackABI = await import('../../artifacts/contracts/CitizenFeedback.sol/CitizenFeedback.json');
+
+      const contract = new ethers.Contract(
+        contractAddresses.CitizenFeedback,
+        citizenFeedbackABI.abi,
+        signer
+      );
+
+      const tx = await contract.submitFeedback(
+        transactionId,
+        comment,
+        rating
+      );
+
+      await tx.wait();
+      return tx.hash;
+    } catch (error) {
+      console.error('Error submitting feedback with signer:', error);
+      throw error;
+    }
+  }
+
+  // Estimate gas for transaction
+  async estimateGas(method: string, args: any[], contractType: 'spending' | 'feedback' = 'spending') {
+    try {
+      // Load contract addresses and ABIs
+      const contractAddresses = await import('../config/contracts.json');
+      
+      let contract;
+      if (contractType === 'spending') {
+        const governmentSpendingABI = await import('../../artifacts/contracts/GovernmentSpending.sol/GovernmentSpending.json');
+        contract = new ethers.Contract(
+          contractAddresses.GovernmentSpending,
+          governmentSpendingABI.abi,
+          this.provider
+        );
+      } else {
+        const citizenFeedbackABI = await import('../../artifacts/contracts/CitizenFeedback.sol/CitizenFeedback.json');
+        contract = new ethers.Contract(
+          contractAddresses.CitizenFeedback,
+          citizenFeedbackABI.abi,
+          this.provider
+        );
+      }
+
+      const gasLimit = await contract.estimateGas[method](...args);
+      const gasPrice = await this.provider.getGasPrice();
+      const totalGasCost = gasLimit.mul(gasPrice);
+
+      return {
+        gasLimit: gasLimit.toString(),
+        gasPrice: ethers.utils.formatUnits(gasPrice, 'gwei'),
+        totalCostEth: ethers.utils.formatEther(totalGasCost),
+        totalCostWei: totalGasCost.toString()
+      };
+    } catch (error) {
+      console.error('Error estimating gas:', error);
       throw error;
     }
   }
