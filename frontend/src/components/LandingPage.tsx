@@ -82,10 +82,10 @@ export const LandingPage: React.FC = () => {
             <div className="text-center">
               {/* Logo and Title */}
               <div className="mb-12">
-                <h1 className="text-6xl font-bold text-white mb-4">
+                <h1 className="text-6xl font-display font-extrabold text-white mb-4 tracking-tight">
                   TransparensiMY
                 </h1>
-                <p className="text-xl text-white/90 mb-2">
+                <p className="text-xl font-body text-white/90 mb-2">
                   {t('governmentSpending')} {t('transparency')}
                 </p>
                 <p className="text-lg text-white/80">
@@ -97,7 +97,7 @@ export const LandingPage: React.FC = () => {
               <div className="grid md:grid-cols-3 gap-8 mb-12">
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-white">
                   <div className="text-4xl mb-4">🏛️</div>
-                  <h3 className="text-xl font-semibold mb-2">Government Transparency</h3>
+                  <h3 className="text-xl font-display font-semibold mb-2">Government Transparency</h3>
                   <p className="text-white/80">
                     Real-time access to government spending records stored immutably on blockchain
                   </p>
@@ -105,7 +105,7 @@ export const LandingPage: React.FC = () => {
 
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-white">
                   <div className="text-4xl mb-4">👥</div>
-                  <h3 className="text-xl font-semibold mb-2">Citizen Participation</h3>
+                  <h3 className="text-xl font-display font-semibold mb-2">Citizen Participation</h3>
                   <p className="text-white/80">
                     Rate and provide feedback on government projects to drive accountability
                   </p>
@@ -113,7 +113,7 @@ export const LandingPage: React.FC = () => {
 
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-white">
                   <div className="text-4xl mb-4">⛓️</div>
-                  <h3 className="text-xl font-semibold mb-2">Blockchain Verified</h3>
+                  <h3 className="text-xl font-display font-semibold mb-2">Blockchain Verified</h3>
                   <p className="text-white/80">
                     All data permanently recorded on blockchain - tamper-proof and publicly verifiable
                   </p>
@@ -124,7 +124,7 @@ export const LandingPage: React.FC = () => {
               <div className="space-y-4">
                 <button
                   onClick={() => setShowLogin(true)}
-                  className="w-full max-w-md bg-white text-malaysia-red px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors duration-200 shadow-lg"
+                  className="w-full max-w-md bg-white text-malaysia-red px-8 py-4 rounded-lg font-display font-semibold text-lg hover:bg-gray-100 transition-colors duration-200 shadow-lg"
                 >
                   🔐 Access Dashboard
                 </button>
@@ -159,7 +159,7 @@ export const LandingPage: React.FC = () => {
             <div className="max-w-md mx-auto">
               <div className="bg-white rounded-lg shadow-xl p-8">
                 <div className="text-center mb-8">
-                  <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
+                  <h2 className="text-3xl font-display font-bold text-gray-900">Welcome Back</h2>
                   <p className="text-gray-600 mt-2">Sign in to access your dashboard</p>
                 </div>
 

@@ -22,7 +22,9 @@ module.exports = {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+        sans: ['Nunito', 'Source Sans Pro', 'ui-sans-serif', 'system-ui'],
+        display: ['Poppins', 'Nunito', 'ui-sans-serif', 'system-ui'],
+        body: ['Source Sans Pro', 'Nunito', 'ui-sans-serif', 'system-ui'],
       }
     },
   },

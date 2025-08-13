@@ -70,7 +70,9 @@ tranparencymy/
 ### Prerequisites
 - Node.js 16+ and npm
 - Git
-- Polygon wallet (MetaMask) with MATIC tokens for deployment
+- MetaMask browser extension
+- Polygon wallet with MATIC tokens (for mainnet deployment only)
+- 4 terminal windows for full local development
 
 ### 1. Clone and Install Dependencies
 
@@ -92,23 +94,43 @@ NODE_ENV=development
 # Blockchain Configuration  
 POLYGON_RPC_URL=https://polygon-rpc.com
 MUMBAI_RPC_URL=https://rpc-mumbai.maticvigil.com
+# For local development, private key is optional (uses hardhat accounts)
 PRIVATE_KEY=your_private_key_here
 
 # Frontend URL
 FRONTEND_URL=http://localhost:3000
+
+# Optional: For contract verification on Polygonscan
+POLYGONSCAN_API_KEY=your_polygonscan_api_key_here
 ```
 
-### 3. Deploy Smart Contracts
+### 3. Start Local Blockchain (Recommended for Development)
 
 ```bash
+# Terminal 1 - Start Hardhat local blockchain
 cd backend
-npm run compile
-npm run deploy:mumbai  # For testnet
-# or
-npm run deploy:polygon # For mainnet
+npx hardhat node
 ```
 
-### 4. Start Development Servers
+This will start a local blockchain on `http://127.0.0.1:8545` with 20 pre-funded accounts.
+
+### 4. Deploy Smart Contracts
+
+```bash
+# Terminal 2 - Deploy contracts to local network
+cd backend
+npm run compile
+npx hardhat run scripts/deploy.js --network localhost
+```
+
+For testnet/mainnet deployment:
+```bash
+npm run deploy:mumbai  # For Mumbai testnet
+# or
+npm run deploy:polygon # For Polygon mainnet
+```
+
+### 5. Start Development Servers
 
 ```bash
 # From root directory
@@ -119,9 +141,39 @@ This will start:
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:3001
 
-### 5. Access the Application
+### 6. Access the Application
 
 Open http://localhost:3000 in your browser to see the TransparensiMY dashboard.
+
+### 7. Setup MetaMask for Local Development
+
+1. **Add Localhost Network to MetaMask:**
+   - Network Name: `Localhost 8545`
+   - RPC URL: `http://127.0.0.1:8545`
+   - Chain ID: `31337`
+   - Currency Symbol: `ETH`
+
+2. **Import Test Account:**
+   - Private Key: `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
+   - This account has admin permissions and 10,000 ETH for testing
+
+3. **Test Blockchain Functionality:**
+   ```bash
+   cd backend
+   node scripts/test-blockchain.js
+   ```
+
+### 8. Demo Credentials
+
+**Admin/Government Access:**
+- Email: `admin@malaysia.gov.my`
+- Password: `admin123`
+- Permissions: Submit spending records, view admin dashboard
+
+**Citizen Access:**
+- Email: `citizen@example.com`
+- Password: `citizen123`
+- Permissions: View projects, submit feedback, rate transparency
 
 ## API Endpoints
 
@@ -164,24 +216,39 @@ Contract for citizen feedback system with features:
 
 ## Development
 
-### Frontend Development
-```bash
-cd frontend
-npm start
-```
+### Local Development Setup (Complete)
 
-### Backend Development
-```bash
-cd backend
-npm run dev
-```
+1. **Terminal 1 - Blockchain Node:**
+   ```bash
+   cd backend
+   npx hardhat node
+   ```
+
+2. **Terminal 2 - Deploy Contracts:**
+   ```bash
+   cd backend
+   npx hardhat run scripts/deploy.js --network localhost
+   ```
+
+3. **Terminal 3 - Backend Server:**
+   ```bash
+   cd backend
+   npm run dev
+   ```
+
+4. **Terminal 4 - Frontend Server:**
+   ```bash
+   cd frontend
+   npm start
+   ```
 
 ### Smart Contract Development
 ```bash
 cd backend
 npm run compile      # Compile contracts
 npm run test         # Run tests
-npm run deploy       # Deploy to configured network
+node scripts/test-blockchain.js  # Test blockchain functionality
+npx hardhat run scripts/deploy.js --network localhost  # Deploy to local
 ```
 
 ### Code Style

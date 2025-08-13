@@ -27,7 +27,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <div className="flex">
               {/* Logo */}
               <div className="flex-shrink-0 flex items-center">
-                <Link to="/" className="text-xl font-bold text-malaysia-red">
+                <Link to="/" className="text-xl font-display font-bold text-malaysia-red tracking-tight">
                   TransparensiMY
                 </Link>
               </div>
